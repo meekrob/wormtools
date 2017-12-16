@@ -1,73 +1,4 @@
 import sys
-
-# convert GFF dict to array of BED6-compatible fields, including the [0,1]-based conversion
-def GFF_as_BED6(gff):
-    bed = [gff['seqname'], gff['start']-1,gff['end'],gff['name']]
-    if gff['score'] is not None:
-        bed.append( gff['score'] )
-    else:
-        bed.append( 0 )
-
-    bed.append(gff['strand'])
-    
-    return bed
-
-def gene_id(gff): # gff is normal dict
-    return get_scalar_attr(gff, 'gene_id')
-    
-def get_scalar_attr(gff, attr_name): # gff is normal dict
-    return get_attr(gff, attr_name)[0]
-
-def get_attr(gff, attr_name):
-    if not gff.has_key('attr'):
-        if gff.has_key('attr_str'):
-            gff['attr'] = GFFParser.parseAttr( gff['attr_str'] )
-        else:
-            raise Exception("gff has no 'attr' or 'attr_str' key. Was it produced via GFFParser?")
-
-    return gff['attr'][attr_name]
-    
-
-class Gene:
-    
-    def __init__(self,genegff):
-        if genegff['name'] != 'gene':
-            raise Exception("constructor requires gff with name == 'gene'.")
-
-        # things I care about at the moment
-        self.seqname = genegff['seqname']
-        self.start = genegff['start']
-        self.end = genegff['end']
-        self.gene_id = gene_id(genegff)
-        self.strand =  genegff['strand']
-        self.transcripts = [] 
-
-    def isforward(self):
-        return self.strand == '+'
-
-    def add_transcript(self, transcript):
-        assert self.gene_id == transcript.gene_id
-        self.transcripts.append(transcript)
-
-    def get_promoters(self, bp_threshold):
-        for transcript in self.transcripts:
-            exon = transcript.get_5prime_exon()
-            if self.strand == '+':
-                yield exon['seqname'], exon['start'] - bp_threshold, exon['start'], "+promoter", self.gene_id + "|" + transcript.transcript_id
-            else:
-                yield exon['seqname'], exon['end'], exon['end'] + bp_threshold, "-promoter", self.gene_id + "|" + transcript.transcript_id
-            
-
-    def get_transcript_ids(self):
-        for transcript in self.transcripts:
-            yield transcript.transcript_id
-
-    def __len__(self):
-        return len(self.transcripts)
-
-    def __str__(self):
-        return "<<<<<<<<<< GENE: %s >>>>>>>>>>>>" % self.gene_id
-
 class Transcript:
     ALLOWED_FEATURES = ['CDS','exon','start_codon', 'stop_codon','five_prime_utr','three_prime_utr','transcript']
 
@@ -206,4 +137,5 @@ class GFFParser:
             gff['attr_str'] = fields[8]
 
         return gff
+
 
