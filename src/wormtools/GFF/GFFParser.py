@@ -1,5 +1,8 @@
 class GFFParser:
-    """Parse according to: http://www.ensembl.org/info/website/upload/gff.html
+    """
+    Static methods for parsing a line in GFF format.
+    ============================================================================
+    Parse according to: http://www.ensembl.org/info/website/upload/gff.html
 
     Fields must be tab-separated. 
     Also, all but the final field in each feature line must contain a value; "empty" columns should be denoted with a '.'
@@ -19,6 +22,10 @@ class GFFParser:
     # Return a dict keyed on attribute name. Values are always arrays.
     @staticmethod
     def parseAttr(attr_str):
+        """
+        Parse an attribute field as read in GFF format. 
+        This is relatively expensive, so be wary of calling by default.
+        """
         d = {}
         fields = [s.strip() for s in attr_str.split(';')]
         for i,f in enumerate(fields):
@@ -36,6 +43,11 @@ class GFFParser:
     # Parse a qualified GFF line into a dict, optionally returning parsed dict of attributes.
     @staticmethod
     def parseLine(gff_line, parse_attributes=False, exclude_features=[]):
+        """
+        Create a GFF dict from a line of GFF format.
+        By default, {'attr_str': '...'} is returned instead of parsed {'attr':{...}} for performance reasons. 
+        GFF.get_attr will call GFFParser.parseAttr if needed.
+        """
         gff = {}
         fields = gff_line.strip().split("\t")
         # sequence/source/feature
