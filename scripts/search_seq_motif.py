@@ -25,36 +25,43 @@ DNA_COMPLEMENT = string.maketrans('ACGT','TGCA')
 MOTIF_COMPLEMENT = string.maketrans('ACGT' + 'KRWMYS' + 'BDHVN', 'TGCA' + 'MYWKRS' + 'VHDBN')
 
 def format_motif(arg):
+    # copy an IUPAC-specified motif into its reverse complement
+    # and merge the two into a legal regular expression
     usr_motif = arg.upper()
     
-    # disassemble string into array with tuples (symbol, range) where range is a string like '{0,3}' that can be attached to a regex pattern
+    # divide motif into a list of (symbol,range). A range is like '{0,3}'
     motif = []
     rangestr = ''
 
     for c in usr_motif:
+        # add supported symbol
         if c in 'ACGTMKWSYRN':
             if rangestr:
                 lc,r = motif[-1]
                 motif[-1] = (lc,rangestr)
                 rangestr = ''
             motif.append((c,None))
+        # accumulate supported range character
         elif c in '{},0123456789':
             rangestr += c
         else:
             raise Exception("character " + c + " not a valid motif character") 
 
+    # do the last one from the above loop 
     if rangestr:
         lc,r = motif_noranges[-1]
         motif_noranges[-1] = (lc,rangestr)
-
     
+    # create the forward regular expression
     regex_motif = ''
     for char,ranges in motif:
         regex_motif += CODES[char]
         if ranges is not None:
             regex_motif += ranges
         
-    regex_motif += '|'
+    regex_motif += '|' # 'or'
+
+    # create and add the reverse complemented regular expression
     motif.reverse()
     for char,ranges in motif:
         regex_motif += CODES[ char.translate(MOTIF_COMPLEMENT) ] 
