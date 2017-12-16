@@ -1,3 +1,4 @@
+import sys
 class GFFParser:
     """
     Static methods for parsing a line in GFF format.
@@ -17,7 +18,11 @@ class GFFParser:
     frame   - One of '0', '1' or '2'. 
     attribute - A semicolon-separated list of tag-value pairs, providing additional information about each feature.
     ----------------------------------------------------------------------------------------------------------------------
+    >>> GFFParser.parseLine(GFFParser.test_line_0)
+    {'seqname': 'IV', 'end': 14926, 'name': 'gene', 'start': 695, 'frame': '.', 'source': 'WormBase', 'score': None, 'attr_str': 'gene_id "WBGene00021406"; gene_source "WormBase"; gene_biotype "protein_coding";', 'strand': '+'}
     """
+    # static data for tests
+    test_line_0 = 'IV	WormBase	gene	695	14926	.	+	.	gene_id "WBGene00021406"; gene_source "WormBase"; gene_biotype "protein_coding";\n'
 
     # Return a dict keyed on attribute name. Values are always arrays.
     @staticmethod
@@ -47,13 +52,18 @@ class GFFParser:
         Create a GFF dict from a line of GFF format.
         By default, {'attr_str': '...'} is returned instead of parsed {'attr':{...}} for performance reasons. 
         GFF.get_attr will call GFFParser.parseAttr if needed.
+
         """
         gff = {}
         fields = gff_line.strip().split("\t")
         # sequence/source/feature
-        gff['seqname'] = fields[0] # name of the chromosome or scaffold; chromosome names can be given with or without the 'chr' prefix.
-        gff['source']  = fields[1] # name of the program the generated this record
-        gff['name']    = fields[2] # feature type name, e.g. Gene, Variation, Similarity
+        try:
+            gff['seqname'] = fields[0] # name of the chromosome or scaffold; chromosome names can be given with or without the 'chr' prefix.
+            gff['source']  = fields[1] # name of the program the generated this record
+            gff['name']    = fields[2] # feature type name, e.g. Gene, Variation, Similarity
+        except IndexError:
+            print >>sys.stderr, "not enough fields(%d) in line `%s'" % (len(fields),gff_line)
+            raise
         if exclude_features and gff['name'] in exclude_features:
             return False
         # position in sequence
@@ -72,3 +82,6 @@ class GFFParser:
 
         return gff
 
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
