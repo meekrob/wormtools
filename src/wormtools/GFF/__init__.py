@@ -1,3 +1,5 @@
+from Gene import Gene 
+from Transcript import Transcript
 import GFFParser
 def GFF_as_BED6(gff):
     """
