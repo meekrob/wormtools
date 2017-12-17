@@ -1,9 +1,8 @@
-import GFF
-
+import GFFParser
 def GFF_as_BED6(gff):
     """
     Convert GFF dict to array of BED6-compatible fields, including the [0,1]-based conversion
-    >>> GFF.GFF_as_BED6(GFF.GFFParser.parseLine(test_line_0))
+    >>> GFF_as_BED6(GFFParser.parseLine(test_line_0))
     ['IV', 694, 14926, 'gene', 0, '+']
     """
     bed = [gff['seqname'], gff['start']-1,gff['end'],gff['name']]
@@ -21,7 +20,7 @@ def gene_id(gff): # gff is normal dict
     Convenience method to get the scalar gene_id out of a GFF returned by GFF.GFFParser
     >>> gene_id({'attr':{'gene_id':['sample_gene_id']}})
     'sample_gene_id'
-    >>> gene_id(GFF.GFFParser.parseLine(test_line_0))
+    >>> gene_id(GFFParser.parseLine(test_line_0))
     'WBGene00021406'
     """
     return get_scalar_attr(gff, 'gene_id')
@@ -42,7 +41,7 @@ def get_attr(gff, attr_name):
     """
     if not gff.has_key('attr'):
         if gff.has_key('attr_str'):
-            gff['attr'] = GFF.GFFParser.parseAttr( gff['attr_str'] )
+            gff['attr'] = GFFParser.parseAttr( gff['attr_str'] )
         else:
             raise Exception("gff has no 'attr' or 'attr_str' key. Was it produced via GFFParser?")
 
