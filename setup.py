@@ -3,7 +3,7 @@ setup(
     name="wormtools",
     version="0.1",
     package_dir={'':'src'},
-    packages=["wormtools"],
+    packages=find_packages('src'),
     scripts=["scripts/search_seq_motif.py"],
     author="David King",
     author_email="davidcking.inbox@gmail.com",
