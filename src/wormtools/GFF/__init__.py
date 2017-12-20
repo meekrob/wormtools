@@ -1,6 +1,14 @@
 from Gene import Gene 
 from Transcript import Transcript
 import GFFParser
+def to0baseEx(start1base, end1baseIncl):
+    """
+    For converting 1-based, inclusive such as GFF to 0-base exclusive, such as BED
+    >>> to0baseEx(1,10)
+    (0, 10)
+    """
+
+    return start1base-1, end1baseIncl
 def GFF_as_BED6(gff):
     """
     Convert GFF dict to array of BED6-compatible fields, including the [0,1]-based conversion
