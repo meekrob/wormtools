@@ -70,7 +70,7 @@ class Transcript:
         for datum in data: self.append(datum)
 
     def __str__(self):
-        s = '%s:%s\n' % (self.transcript.gene_id, self.transcript.transcript_id)
+        s = '%s:%s\n' % (self.gene_id, self.transcript_id)
         for gff in self.gffdata:
             s += "%s:%s %d %d %s\n" % (gff['seqname'], gff['name'].ljust(11), gff['start'], gff['end'], gff['strand'])
 
