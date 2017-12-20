@@ -4,6 +4,8 @@ setup(
     version="0.1",
     package_dir={'':'src'},
     packages=find_packages('src'),
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
     scripts=["scripts/search_seq_motif.py"],
     author="David King",
     author_email="davidcking.inbox@gmail.com",
