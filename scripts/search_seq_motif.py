@@ -24,6 +24,9 @@ CODES = { # use this to make a legal regex
 DNA_COMPLEMENT = string.maketrans('ACGT','TGCA')
 MOTIF_COMPLEMENT = string.maketrans('ACGT' + 'KRWMYS' + 'BDHVN', 'TGCA' + 'MYWKRS' + 'VHDBN')
 
+def expand_match(m): 
+    return m.start(), m.end(), m.string[m.start():m.end()]
+
 def format_motif(arg):
     # copy an IUPAC-specified motif into its reverse complement
     # and merge the two into a legal regular expression
@@ -34,8 +37,9 @@ def format_motif(arg):
     rangestr = ''
 
     for c in usr_motif:
-        # add supported symbol
-        if c in 'ACGTMKWSYRN':
+        # add supported symbols
+        #if c in 'ACGTMKWSYRN':
+        if c in 'ACGTMKWSYRNBDHV':
             if rangestr:
                 lc,r = motif[-1]
                 motif[-1] = (lc,rangestr)
@@ -59,35 +63,56 @@ def format_motif(arg):
         if ranges is not None:
             regex_motif += ranges
         
-    regex_motif += '|' # 'or'
+    #regex_motif += '|' # 'or'
+    revcmp_motif = ''
 
     # create and add the reverse complemented regular expression
     motif.reverse()
     for char,ranges in motif:
-        regex_motif += CODES[ char.translate(MOTIF_COMPLEMENT) ] 
+        revcmp_motif += CODES[ char.translate(MOTIF_COMPLEMENT) ] 
         if ranges is not None:
-            regex_motif += ranges
+            revcmp_motif += ranges
 
-    return regex_motif
+    return regex_motif,revcmp_motif
 
-pattern = format_motif( sys.argv[1] )
-print >>sys.stderr, "searching", pattern
+forward_pattern, reverse_pattern = format_motif( sys.argv[1] )
+print >>sys.stderr, "searching", forward_pattern, "|", reverse_pattern
 
 # prepare to read from file or stdin
+mfastas = {}
+current_fa = None
 if len(sys.argv) > 2:
     inseq = open(sys.argv[2]) # must be single, not multi fasta
-    header = fastafile.readline()
+
+    print >>sys.stderr, "reading in sequences:",
+    for line in inseq:
+        if line.startswith('>'):
+            current_fa = line.lstrip('>').strip()
+        else:
+            if current_fa not in mfastas: 
+                mfastas[current_fa] = ''
+            mfastas[current_fa] += line.strip().upper()
+
+    print >>sys.stderr, "done."
+        
 else: 
-    inseq = sys.stdin
+    print >>sys.stderr, "%s motif file.fa" % sys.argv[0]
+    sys.exit(0)
 
-print >>sys.stderr, "reading in sequence:",
-seq = ''
-for line in inseq: seq += line.strip().upper()
-# verify sequence
-print >>sys.stderr, len(seq), "characters: `%s'" % seq
-# search sequence
-result = re.compile(pattern).finditer(seq)
-for i,r in enumerate(result): 
-    s,e = r.start(), r.end()
-    print s,e, seq[s:e]
+f_compiled = re.compile(forward_pattern)
+r_compiled = re.compile(reverse_pattern)
 
+print >>sys.stderr, "scanning sequences:",
+for header,seq in mfastas.items():
+    
+    # search sequences
+    f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
+    r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
+    result = f_result + r_result
+    result.sort(key=lambda a: (a[0],a[1]))
+
+    for i,r in enumerate(result): 
+        s,e,seq,strand = r[0], r[1], r[2], r[3]
+        print header, s,e, strand, seq
+
+print >>sys.stderr, "done"
