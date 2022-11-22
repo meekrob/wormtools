@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-import re,sys
+import re,sys,gzip
 
 if len(sys.argv) < 2:
-    print(sys.argv[0], "motif", "infile.fasta")
+    print(sys.argv[0], "motif", "infile.fasta[.gz]")
     print("    Convert motif into regular expression, plus reverse complement, and scan input sequence.")
-    print("If infile.fasta is not supplied, sequence is assumed to be from stdin")
     print("    motif can contain all IUPAC characters https://en.wikipedia.org/wiki/Nucleic_acid_notation")
     print("    A valid regular expression range, i.e. {min,max} may be specified to apply to the preceding character.")
     print("    See https://www.gnu.org/software/grep/manual/grep.html#Fundamental-Structure for exact syntax.")
@@ -23,6 +22,43 @@ CODES = { # use this to make a legal regex
 # translation tables for complementation
 DNA_COMPLEMENT = str.maketrans('ACGT','TGCA')
 MOTIF_COMPLEMENT = str.maketrans('ACGT' + 'KRWMYS' + 'BDHVN', 'TGCA' + 'MYWKRS' + 'VHDBN')
+
+def decode(gzip_iterable):
+    for gz in gzip_iterable:
+        yield gz.decode()
+
+def readGZfa(gzfilename):
+
+    isGzip = False
+    if gzfilename.endswith('.gz'):
+        isGzip = True
+        fh = gzip.open(gzfilename)
+        
+    else:
+        fh = open(gzfilename)
+
+    with fh:
+        current_seq = None
+        current_header = None
+        if isGzip: 
+            lines = decode(fh)
+        else: 
+            lines = fh
+    
+        for line in lines:
+            if line.startswith('>'):
+
+                if current_header is not None:
+                    yield current_header,current_seq
+
+                current_header = line.strip().lstrip('>')
+                current_seq = ''
+                
+            else:
+                current_seq += line.strip()
+
+        if current_header is not None:
+            yield current_header, current_seq.upper()
 
 def expand_match(m): 
     return m.start(), m.end(), m.string[m.start():m.end()]
@@ -78,49 +114,14 @@ def format_motif(arg):
 forward_pattern, reverse_pattern = format_motif( sys.argv[1] )
 print("searching", forward_pattern, "|", reverse_pattern, file=sys.stderr)
 
-# prepare to read from file or stdin
-mfastas = {}
-if len(sys.argv) > 2:
-    inseq = open(sys.argv[2]) 
-
-    header = None
-    seq = ''
-
-    print("reading in sequences:", end=' ', file=sys.stderr)
-    for line in inseq:
-        
-        data = line.strip() # remove whitespace from ends
-        if data.startswith('>'): # this is a fasta header
-            if header is not None:
-                mfastas[ header ] = seq.upper()
-                header = None
-                seq = ''
-            header = data.lstrip('>') # remove the '>'
-            print(header, end=" ", file=sys.stderr, flush=True)
-        else:
-            seq += data
-
-        """
-        if line.startswith('>'):
-            current_fa = line.lstrip('>').strip()
-        else:
-            if current_fa not in mfastas: 
-                mfastas[current_fa] = ''
-            mfastas[current_fa] += line.strip().upper()
-        """
-    mfastas[ header ] = seq.upper()
-
-    print("done.", file=sys.stderr)
-        
-else: 
-    print("%s motif file.fa" % sys.argv[0], file=sys.stderr)
-    sys.exit(0)
-
 f_compiled = re.compile(forward_pattern)
 r_compiled = re.compile(reverse_pattern)
 
 print("scanning sequences:", end=' ', file=sys.stderr)
-for header,seq in list(mfastas.items()):
+
+inseq = sys.argv[2]
+
+for header,seq in readGZfa(inseq):
     
     print(header, end=" ", file=sys.stderr, flush=True)
     # search sequences
