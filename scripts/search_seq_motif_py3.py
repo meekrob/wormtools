@@ -1,13 +1,13 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python2
 import re,sys,string
 
 if len(sys.argv) < 2:
-    print(sys.argv[0], "motif", "infile.fasta")
-    print("    Convert motif into regular expression, plus reverse complement, and scan input sequence.")
-    print("If infile.fasta is not supplied, sequence is assumed to be from stdin")
-    print("    motif can contain all IUPAC characters https://en.wikipedia.org/wiki/Nucleic_acid_notation")
-    print("    A valid regular expression range, i.e. {min,max} may be specified to apply to the preceding character.")
-    print("    See https://www.gnu.org/software/grep/manual/grep.html#Fundamental-Structure for exact syntax.")
+    print sys.argv[0], "motif", "infile.fasta"
+    print "    Convert motif into regular expression, plus reverse complement, and scan input sequence."
+    print "If infile.fasta is not supplied, sequence is assumed to be from stdin"
+    print "    motif can contain all IUPAC characters https://en.wikipedia.org/wiki/Nucleic_acid_notation"
+    print "    A valid regular expression range, i.e. {min,max} may be specified to apply to the preceding character."
+    print "    See https://www.gnu.org/software/grep/manual/grep.html#Fundamental-Structure for exact syntax."
     sys.exit(1)
 
 VALID_CHARS = 'ACGTKRWMYSBDHVN'
@@ -21,8 +21,8 @@ CODES = { # use this to make a legal regex
     'N': '[ACGT]' }
 
 # translation tables for complementation
-DNA_COMPLEMENT = str.maketrans('ACGT','TGCA')
-MOTIF_COMPLEMENT = str.maketrans('ACGT' + 'KRWMYS' + 'BDHVN', 'TGCA' + 'MYWKRS' + 'VHDBN')
+DNA_COMPLEMENT = string.maketrans('ACGT','TGCA')
+MOTIF_COMPLEMENT = string.maketrans('ACGT' + 'KRWMYS' + 'BDHVN', 'TGCA' + 'MYWKRS' + 'VHDBN')
 
 def expand_match(m): 
     return m.start(), m.end(), m.string[m.start():m.end()]
@@ -76,7 +76,7 @@ def format_motif(arg):
     return regex_motif,revcmp_motif
 
 forward_pattern, reverse_pattern = format_motif( sys.argv[1] )
-print("searching", forward_pattern, "|", reverse_pattern, file=sys.stderr)
+print >>sys.stderr, "searching", forward_pattern, "|", reverse_pattern
 
 # prepare to read from file or stdin
 mfastas = {}
@@ -84,7 +84,7 @@ current_fa = None
 if len(sys.argv) > 2:
     inseq = open(sys.argv[2]) # must be single, not multi fasta
 
-    print("reading in sequences:", end=' ', file=sys.stderr)
+    print >>sys.stderr, "reading in sequences:",
     for line in inseq:
         if line.startswith('>'):
             current_fa = line.lstrip('>').strip()
@@ -93,17 +93,17 @@ if len(sys.argv) > 2:
                 mfastas[current_fa] = ''
             mfastas[current_fa] += line.strip().upper()
 
-    print("done.", file=sys.stderr)
+    print >>sys.stderr, "done."
         
 else: 
-    print("%s motif file.fa" % sys.argv[0], file=sys.stderr)
+    print >>sys.stderr, "%s motif file.fa" % sys.argv[0]
     sys.exit(0)
 
 f_compiled = re.compile(forward_pattern)
 r_compiled = re.compile(reverse_pattern)
 
-print("scanning sequences:", end=' ', file=sys.stderr)
-for header,seq in list(mfastas.items()):
+print >>sys.stderr, "scanning sequences:",
+for header,seq in mfastas.items():
     
     # search sequences
     f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
@@ -113,6 +113,6 @@ for header,seq in list(mfastas.items()):
 
     for i,r in enumerate(result): 
         s,e,seq,strand = r[0], r[1], r[2], r[3]
-        print(header, s,e, strand, seq)
+        print header, s,e, strand, seq
 
-print("done", file=sys.stderr)
+print >>sys.stderr, "done"
