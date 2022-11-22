@@ -1,7 +1,58 @@
 #!/usr/bin/env python3
-import re,sys,gzip
+"""
+Scan a (multi)fasta file for a DNA motif.
 
-if len(sys.argv) < 2:
+Example:
+$ search_seq_motif.py chrI.fa WGATAR
+chrI 439 445 + AGATAA
+chrI 3071 3077 + AGATAG
+chrI 3683 3689 - CTATCT
+chrI 5404 5410 - TTATCT
+"""
+
+import re,sys,gzip,argparse
+def main():
+
+    args = get_args()
+
+    forward_pattern, reverse_pattern = format_motif( args.motif )
+    print("searching", forward_pattern, "|", reverse_pattern, file=sys.stderr)
+
+    f_compiled = re.compile(forward_pattern)
+    r_compiled = re.compile(reverse_pattern)
+
+    print("scanning sequences:", end=' ', file=sys.stderr)
+
+    inseq = args.fasta
+
+    for header,seq in readGZfa(inseq):
+        
+        print(header, end=" ", file=sys.stderr, flush=True)
+        # search sequences
+        f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
+        r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
+        result = f_result + r_result
+        result.sort(key=lambda a: (a[0],a[1]))
+
+        print("(%d)" % len(result), file=sys.stderr, flush=True, end=' ')
+
+        for i,r in enumerate(result): 
+            s,e,seq,strand = r[0], r[1], r[2], r[3]
+            print(header, s,e, strand, seq)
+
+    print("done.", file=sys.stderr)
+
+def get_args():
+    parser = argparse.ArgumentParser(prog="search_seq_motif.py", 
+        description=__doc__, 
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="Default output lines are: seqname start end strand sequence")
+    parser.add_argument('motif', help="DNA Motif in IUPAC symbols")   
+    parser.add_argument('fasta', help="Fasta file. Can be gzipped (expects .gz extension).")
+    parser.add_argument('-c', '--count', help="Output the number of matches for each sequence instead of the positions.", action='store_false')
+    return parser.parse_args()
+
+if False:
     print(sys.argv[0], "motif", "infile.fasta[.gz]")
     print("    Convert motif into regular expression, plus reverse complement, and scan input sequence.")
     print("    motif can contain all IUPAC characters https://en.wikipedia.org/wiki/Nucleic_acid_notation")
@@ -111,29 +162,5 @@ def format_motif(arg):
 
     return regex_motif,revcmp_motif
 
-forward_pattern, reverse_pattern = format_motif( sys.argv[1] )
-print("searching", forward_pattern, "|", reverse_pattern, file=sys.stderr)
 
-f_compiled = re.compile(forward_pattern)
-r_compiled = re.compile(reverse_pattern)
-
-print("scanning sequences:", end=' ', file=sys.stderr)
-
-inseq = sys.argv[2]
-
-for header,seq in readGZfa(inseq):
-    
-    print(header, end=" ", file=sys.stderr, flush=True)
-    # search sequences
-    f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
-    r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
-    result = f_result + r_result
-    result.sort(key=lambda a: (a[0],a[1]))
-
-    print("(%d)" % len(result), file=sys.stderr, flush=True, end=' ')
-
-    for i,r in enumerate(result): 
-        s,e,seq,strand = r[0], r[1], r[2], r[3]
-        print(header, s,e, strand, seq)
-
-print("done.", file=sys.stderr)
+if __name__ == '__main__': main()
