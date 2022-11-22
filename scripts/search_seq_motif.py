@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import re,sys,string
+import re,sys
 
 if len(sys.argv) < 2:
     print(sys.argv[0], "motif", "infile.fasta")
@@ -80,18 +80,35 @@ print("searching", forward_pattern, "|", reverse_pattern, file=sys.stderr)
 
 # prepare to read from file or stdin
 mfastas = {}
-current_fa = None
 if len(sys.argv) > 2:
-    inseq = open(sys.argv[2]) # must be single, not multi fasta
+    inseq = open(sys.argv[2]) 
+
+    header = None
+    seq = ''
 
     print("reading in sequences:", end=' ', file=sys.stderr)
     for line in inseq:
+        
+        data = line.strip() # remove whitespace from ends
+        if data.startswith('>'): # this is a fasta header
+            if header is not None:
+                mfastas[ header ] = seq.upper()
+                header = None
+                seq = ''
+            header = data.lstrip('>') # remove the '>'
+            print(header, end=" ", file=sys.stderr, flush=True)
+        else:
+            seq += data
+
+        """
         if line.startswith('>'):
             current_fa = line.lstrip('>').strip()
         else:
             if current_fa not in mfastas: 
                 mfastas[current_fa] = ''
             mfastas[current_fa] += line.strip().upper()
+        """
+    mfastas[ header ] = seq.upper()
 
     print("done.", file=sys.stderr)
         
@@ -105,14 +122,17 @@ r_compiled = re.compile(reverse_pattern)
 print("scanning sequences:", end=' ', file=sys.stderr)
 for header,seq in list(mfastas.items()):
     
+    print(header, end=" ", file=sys.stderr, flush=True)
     # search sequences
     f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
     r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
     result = f_result + r_result
     result.sort(key=lambda a: (a[0],a[1]))
 
+    print("(%d)" % len(result), file=sys.stderr, flush=True, end=' ')
+
     for i,r in enumerate(result): 
         s,e,seq,strand = r[0], r[1], r[2], r[3]
         print(header, s,e, strand, seq)
 
-print("done", file=sys.stderr)
+print("done.", file=sys.stderr)
