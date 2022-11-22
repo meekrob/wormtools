@@ -102,3 +102,11 @@ ENV/
 
 # vi swap files
 *.swp
+scripts/WGATAR.hits.bb
+scripts/WGATAR.hits
+scripts/TGATAA.hits.bb
+scripts/TGATAA.hits
+scripts/search_seq_motif.py.bak
+scripts/makeBigBed.sh
+scripts/genome.fa
+scripts/chrom.sizes
