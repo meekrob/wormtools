@@ -27,18 +27,22 @@ def main():
 
     for header,seq in readGZfa(inseq):
         
-        print(header, end=" ", file=sys.stderr, flush=True)
-        # search sequences
-        f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
-        r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
-        result = f_result + r_result
-        result.sort(key=lambda a: (a[0],a[1]))
+        if args.count:
+            count = len(f_compiled.findall(seq)) + len(r_compiled.findall(seq))
+            print(header, count)
+        else:
+            print(header, end=" ", file=sys.stderr, flush=True)
+            # search sequences
+            f_result = [ expand_match(m) + ('+',) for m in f_compiled.finditer(seq)]
+            r_result = [ expand_match(m) + ('-',) for m in r_compiled.finditer(seq)]
+            result = f_result + r_result
+            result.sort(key=lambda a: (a[0],a[1]))
 
-        print("(%d)" % len(result), file=sys.stderr, flush=True, end=' ')
+            print("(%d)" % len(result), file=sys.stderr, flush=True, end=' ')
 
-        for i,r in enumerate(result): 
-            s,e,seq,strand = r[0], r[1], r[2], r[3]
-            print(header, s,e, strand, seq)
+            for i,r in enumerate(result): 
+                s,e,seq,strand = r[0], r[1], r[2], r[3]
+                print(header, s,e, strand, seq)
 
     print("done.", file=sys.stderr)
 
@@ -49,7 +53,7 @@ def get_args():
         epilog="Default output lines are: seqname start end strand sequence")
     parser.add_argument('motif', help="DNA Motif in IUPAC symbols")   
     parser.add_argument('fasta', help="Fasta file. Can be gzipped (expects .gz extension).")
-    parser.add_argument('-c', '--count', help="Output the number of matches for each sequence instead of the positions.", action='store_false')
+    parser.add_argument('-c', '--count', help="Output the number of matches for each sequence instead of the positions.", action='store_true')
     return parser.parse_args()
 
 if False:
